@@ -1,0 +1,424 @@
+<html lang="en">
+  <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,
+  initial-scale=1.0">
+  <title>Kanban — Accounting Enthusiasm</title>
+  <style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --accent:#FF6719;
+    --dark:#0F1923;
+    --nav-bg:#1a2332;
+    --text:#1a1a1a;
+    --muted:#6b7280;
+    --border:#e5e7eb;
+    --bg:#f0f2f5;
+    --white:#fff;
+  }
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--b
+  g);color:var(--text);min-height:100vh}
+  .top-nav{position:sticky;top:0;z-index:100;background:var(--nav-bg)
+  ;display:flex;align-items:center;padding:0
+  24px;height:54px;box-shadow:0 2px 12px rgba(0,0,0,.4);gap:16px}
+  .nav-logo{color:#fff;font-size:.95rem;font-weight:700;margin-right:
+  auto}
+  .nav-logo span{color:var(--accent)}
+  .nav-btn{background:rgba(255,255,255,.1);color:#fff;border:none;bor
+  der-radius:8px;padding:6px 14px;font-size:.8rem;font-weight:600;cur
+  sor:pointer;transition:background .2s;white-space:nowrap}
+  .nav-btn:hover{background:rgba(255,103,25,.4)}
+  .board-wrap{padding:24px 20px;max-width:1200px;margin:0 auto}
+  .board-title{font-size:1.1rem;font-weight:700;color:var(--dark);mar
+  gin-bottom:20px;display:flex;align-items:center;gap:8px}
+  .board-title::before{content:'';display:inline-block;width:4px;heig
+  ht:18px;background:var(--accent);border-radius:3px}
+  .columns{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;
+  align-items:start}
+  .col{background:var(--white);border-radius:14px;border:1px solid
+  var(--border);overflow:hidden}
+  .col-header{padding:14px 16px;display:flex;align-items:center;justi
+  fy-content:space-between;border-bottom:1px solid var(--border)}
+  .col-header h2{font-size:.88rem;font-weight:700;display:flex;align-
+  items:center;gap:8px}
+  .col-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .col-count{background:var(--bg);color:var(--muted);border-radius:20
+  px;padding:2px 9px;font-size:.72rem;font-weight:700}
+  .col-add{background:none;border:none;color:var(--muted);cursor:poin
+  ter;font-size:1.2rem;line-height:1;padding:2px
+  4px;border-radius:4px;transition:color .2s,background .2s}
+  .col-add:hover{color:var(--accent);background:#fff7ed}
+  .cards{min-height:80px;padding:12px;display:flex;flex-direction:col
+  umn;gap:10px}
+  .cards.drag-over{background:#fff7ed;border-radius:8px}
+  .card{background:var(--white);border:1px solid
+  var(--border);border-radius:12px;padding:14px 14px
+  12px;position:relative;cursor:grab;transition:transform
+  .2s,box-shadow .2s,opacity .2s;border-top:3px solid transparent}
+  .card:hover{transform:translateY(-2px);box-shadow:0 8px 24px
+  rgba(0,0,0,.08)}
+  .card.dragging{opacity:.4;cursor:grabbing}
+  .card-top{display:flex;align-items:flex-start;justify-content:space
+  -between;gap:8px;margin-bottom:6px}
+  .card-title{font-size:.88rem;font-weight:700;line-height:1.35;color
+  :var(--dark);flex:1}
+  .card-actions{display:flex;gap:4px;flex-shrink:0}
+  .card-btn{background:none;border:none;cursor:pointer;font-size:.8re
+  m;padding:3px
+  6px;border-radius:5px;color:var(--muted);transition:all .15s}
+  .card-btn:hover{background:var(--bg);color:var(--text)}
+  .card-btn.danger:hover{background:#fee2e2;color:#dc2626}
+  .card-note{font-size:.78rem;color:var(--muted);line-height:1.5;marg
+  in-bottom:8px;white-space:pre-wrap}
+  .card-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .card-tag{font-size:.68rem;font-weight:700;letter-spacing:.05em;tex
+  t-transform:uppercase;background:#fff7ed;color:var(--accent);border
+  :1px solid #fed7aa;border-radius:10px;padding:2px 8px}
+  .card-date{font-size:.7rem;color:#9ca3af}
+  .pomo-wrap{margin-top:10px;padding:10px 12px;background:var(--bg);b
+  order-radius:8px;display:flex;align-items:center;gap:10px}
+  .pomo-timer{font-size:1.1rem;font-weight:800;color:var(--dark);font
+  -variant-numeric:tabular-nums;min-width:52px}
+  .pomo-timer.running{color:var(--accent)}
+  .pomo-timer.done{color:#16a34a}
+  .pomo-btn{background:none;border:1px solid
+  var(--border);border-radius:6px;padding:3px
+  10px;font-size:.72rem;font-weight:600;cursor:pointer;transition:all
+   .15s;color:var(--text)}
+  .pomo-btn:hover{background:var(--accent);color:#fff;border-color:va
+  r(--accent)}
+  .pomo-count{font-size:.72rem;color:var(--muted);margin-left:auto}
+  .subtasks{margin-top:8px;display:flex;flex-direction:column;gap:4px
+  }
+  .subtask-item{display:flex;align-items:center;gap:8px;font-size:.78
+  rem;color:var(--text);padding:3px 0}
+  .subtask-item input[type=checkbox]{width:14px;height:14px;accent-co
+  lor:var(--accent);cursor:pointer;flex-shrink:0}
+  .subtask-item.checked
+  span{text-decoration:line-through;color:var(--muted)}
+  .subtask-progress{height:4px;background:var(--border);border-radius
+  :4px;margin-top:6px;overflow:hidden}
+  .subtask-progress-bar{height:100%;background:var(--accent);border-r
+  adius:4px;transition:width .3s}
+  .modal-overlay{display:none;position:fixed;inset:0;z-index:200;back
+  ground:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:center;
+  justify-content:center}
+  .modal-overlay.show{display:flex}
+  .modal{background:var(--white);border-radius:18px;padding:28px
+  26px;width:min(480px,94vw);max-height:90vh;overflow-y:auto;animatio
+  n:fadeUp .25s ease}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opac
+  ity:1;transform:translateY(0)}}
+  .modal h2{font-size:1rem;font-weight:700;margin-bottom:18px;color:v
+  ar(--dark)}
+  .modal label{font-size:.78rem;font-weight:600;color:var(--muted);di
+  splay:block;margin-bottom:4px}
+  .modal input,.modal select,.modal textarea{width:100%;border:1px
+  solid var(--border);border-radius:8px;padding:9px
+  12px;font-size:.85rem;margin-bottom:14px;outline:none;font-family:i
+  nherit;color:var(--text);transition:border-color .2s}
+  .modal input:focus,.modal select:focus,.modal
+  textarea:focus{border-color:var(--accent)}
+  .modal textarea{resize:vertical;min-height:80px}
+  .modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-t
+  op:4px}
+  .btn-cancel{background:#f3f4f6;color:var(--text);border:none;paddin
+  g:9px 18px;border-radius:8px;font-size:.83rem;font-weight:600;curso
+  r:pointer}
+  .btn-cancel:hover{background:#e5e7eb}
+  .btn-primary{background:var(--accent);color:#fff;border:none;paddin
+  g:9px 20px;border-radius:8px;font-size:.83rem;font-weight:600;curso
+  r:pointer;transition:background .2s}
+  .btn-primary:hover{background:#e55a0f}
+  .toast{position:fixed;bottom:24px;right:24px;z-index:999;background
+  :var(--dark);color:#fff;border-radius:10px;padding:10px
+  18px;font-size:.8rem;font-weight:600;transform:translateY(16px);opa
+  city:0;transition:all .3s;pointer-events:none}
+  .toast.show{transform:translateY(0);opacity:1}
+  .stats-bar{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+  .stat{background:var(--white);border:1px solid
+  var(--border);border-radius:10px;padding:10px
+  18px;display:flex;flex-direction:column;gap:2px;min-width:120px}
+  .stat-val{font-size:1.3rem;font-weight:800;color:var(--dark)}
+  .stat-val span{color:var(--accent)}
+  .stat-label{font-size:.72rem;color:var(--muted);font-weight:600}
+  @media(max-width:700px){.columns{grid-template-columns:1fr}}
+  </style>
+  </head>
+  <body>
+  <nav class="top-nav">
+    <div class="nav-logo">Kanban — <span>Accounting
+  Enthusiasm</span></div>                                            
+    <button class="nav-btn" onclick="openAddCard('todo')">+ Add
+  Card</button>                                                      
+    <button class="nav-btn" onclick="exportBoard()">⬇️ 
+  Export</button>                                                    
+  </nav>
+  <div class="board-wrap">                                           
+    <div class="board-title">Project Board</div>
+    <div class="stats-bar">
+      <div class="stat"><div class="stat-val"                        
+  id="stat-total">0</div><div class="stat-label">Total
+  Cards</div></div>                                                  
+      <div class="stat"><div class="stat-val"><span 
+  id="stat-wip">0</span></div><div class="stat-label">In             
+  Progress</div></div>
+      <div class="stat"><div class="stat-val"                        
+  id="stat-done">0</div><div class="stat-label">Done</div></div>     
+      <div class="stat"><div class="stat-val"><span 
+  id="stat-pomo">0</span> 🍅</div><div class="stat-label">Pomodoros  
+  Done</div></div>
+    </div>                                                           
+    <div class="columns">
+      <div class="col">                                              
+        <div class="col-header">
+          <h2><span class="col-dot"                                  
+  style="background:#94a3b8"></span> To Do</h2>                      
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="col-count" id="count-todo">0</span>         
+            <button class="col-add" 
+  onclick="openAddCard('todo')">+</button>                           
+          </div>  
+        </div>                                                       
+        <div class="cards" id="cards-todo" 
+  ondragover="onDragOver(event)" ondrop="onDrop(event,'todo')"       
+  ondragleave="onDragLeave(event)"></div>
+      </div>                                                         
+      <div class="col">
+        <div class="col-header">
+          <h2><span class="col-dot" 
+  style="background:#f59e0b"></span> Work in Progress</h2>           
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="col-count" id="count-wip">0</span>          
+            <button class="col-add" 
+  onclick="openAddCard('wip')">+</button>                            
+          </div>
+        </div>                                                       
+        <div class="cards" id="cards-wip" 
+  ondragover="onDragOver(event)" ondrop="onDrop(event,'wip')"        
+  ondragleave="onDragLeave(event)"></div>
+      </div>                                                         
+      <div class="col">
+        <div class="col-header">
+          <h2><span class="col-dot" 
+  style="background:#22c55e"></span> Done ✓</h2>                     
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="col-count" id="count-done">0</span>         
+            <button class="col-add" 
+  onclick="openAddCard('done')">+</button>                           
+          </div>
+        </div>                                                       
+        <div class="cards" id="cards-done" 
+  ondragover="onDragOver(event)" ondrop="onDrop(event,'done')"       
+  ondragleave="onDragLeave(event)"></div>
+      </div>                                                         
+    </div>        
+  </div>
+  <div class="modal-overlay" id="card-modal" 
+  onclick="closeModalBg(event)">                                     
+    <div class="modal">
+      <h2 id="modal-title">✍️  Add New Card</h2>                      
+      <input type="hidden" id="edit-id">
+      <label>Task Title</label>                                      
+      <input type="text" id="inp-title" placeholder="e.g. Reconcile 
+  bank statement...">                                                
+      <label>Notes</label>
+      <textarea id="inp-note" placeholder="Details, links, or extra  
+  notes..."></textarea>                                              
+      <label>Subtasks (one per line)</label>
+      <textarea id="inp-subtasks" placeholder="Enter data&#10;Check  
+  balance&#10;Send report" style="min-height:70px"></textarea>       
+      <label>Category</label>
+      <select id="inp-cat">                                          
+        <option value="Accounting">📒 Accounting</option>
+        <option value="AI">🤖 AI</option>                            
+        <option value="Systems">⚙️  Systems</option>
+        <option value="Learning">📚 Learning</option>                
+        <option value="Personal">🙋 Personal</option>                
+      </select>
+      <label>Column</label>                                          
+      <select id="inp-col">
+        <option value="todo">To Do</option>
+        <option value="wip">Work in Progress</option>                
+        <option value="done">Done</option>
+      </select>                                                      
+      <label>Pomodoros planned</label>
+      <input type="number" id="inp-pomo" value="1" min="1" max="10"> 
+      <div class="modal-btns">                                       
+        <button class="btn-cancel"                                   
+  onclick="closeModal()">Cancel</button>                             
+        <button class="btn-primary" onclick="saveCard()">Save Card
+  →</button>                                                         
+      </div>
+    </div>                                                           
+  </div>          
+  <div class="toast" id="toast"></div>
+  <script>
+  let board=JSON.parse(localStorage.getItem('kanban_board')||'{"todo"
+  :[],"wip":[],"done":[]}');                                         
+  let pomTimers={};let dragId=null;
+  function save(){localStorage.setItem('kanban_board',JSON.stringify(
+  board));renderAll();}                                              
+  function renderAll(){['todo','wip','done'].forEach(col=>{const
+  el=document.getElementById('cards-'+col);el.innerHTML='';(board[col
+  ]||[]).forEach(card=>el.appendChild(makeCard(card,col)));document.g
+  etElementById('count-'+col).textContent=(board[col]||[]).length;});
+  updateStats();} 
+  function makeCard(card,col){const
+  div=document.createElement('div');div.className='card';div.draggabl
+  e=true;div.dataset.id=card.id;div.dataset.col=col;const
+  borders={todo:'#94a3b8',wip:'#f59e0b',done:'#22c55e'};div.style.bor
+  derTopColor=borders[col]||'var(--accent)';const titleStyle=col==='d
+  one'?'text-decoration:line-through;opacity:.6':'';const
+  subs=card.subtasks||[];const
+  subsDone=subs.filter(s=>s.done).length;const
+  subsPct=subs.length?Math.round(subsDone/subs.length*100):0;const
+  subsHTML=subs.length?`<div
+  class="subtasks">${subs.map((s,i)=>`<label class="subtask-item
+  ${s.done?'checked':''}"><input type="checkbox"
+  ${s.done?'checked':''}
+  onchange="toggleSub('${card.id}',${i},this.checked,'${col}')"><span
+  >${s.text}</span></label>`).join('')}</div><div
+  class="subtask-progress"><div class="subtask-progress-bar"
+  style="width:${subsPct}%"></div></div><div style="font-size:.7rem;c
+  olor:var(--muted);margin-top:3px">${subsDone}/${subs.length}
+  subtasks</div>`:'';div.innerHTML=`<div class="card-top"><div
+  class="card-title" style="${titleStyle}">${card.title}</div><div
+  class="card-actions"><button class="card-btn"
+  onclick="editCard('${card.id}')">✏️ </button><button
+  class="card-btn"
+  onclick="moveCard('${card.id}','${col}')">→</button><button
+  class="card-btn danger" onclick="deleteCard('${card.id}','${col}')"
+  >🗑</button></div></div>${card.note?`<div
+  class="card-note">${card.note}</div>`:''}${subsHTML}<div
+  class="card-meta" style="margin-top:8px"><span
+  class="card-tag">${card.cat||'General'}</span><span
+  class="card-date">${card.date||''}</span></div><div
+  class="pomo-wrap"><div class="pomo-timer"
+  id="timer-${card.id}">25:00</div><button class="pomo-btn"
+  id="pbtn-${card.id}" onclick="togglePomo('${card.id}')">▶
+  Start</button><button class="pomo-btn"
+  onclick="resetPomo('${card.id}')">↺</button><span
+  class="pomo-count" id="pcount-${card.id}">🍅×${card.pomoDone||0}/${
+  card.pomoPlanned||1}</span></div>`;div.addEventListener('dragstart'
+  ,()=>{dragId=card.id+'|'+col;setTimeout(()=>div.classList.add('drag
+  ging'),0);});div.addEventListener('dragend',()=>{div.classList.remo
+  ve('dragging');dragId=null;});if(pomTimers[card.id]){const s=pomTim
+  ers[card.id];updateTimerUI(card.id,s.remaining,s.running);}return
+  div;}
+  function togglePomo(id){if(!pomTimers[id])pomTimers[id]={remaining:
+  25*60,running:false,interval:null};const                           
+  s=pomTimers[id];if(s.running){clearInterval(s.interval);s.running=f
+  alse;updateTimerUI(id,s.remaining,false);}else{s.running=true;s.int
+  erval=setInterval(()=>{s.remaining--;updateTimerUI(id,s.remaining,t
+  rue);if(s.remaining<=0){clearInterval(s.interval);s.running=false;p
+  omoDone(id);}},1000);updateTimerUI(id,s.remaining,true);}}
+  function resetPomo(id){if(pomTimers[id]){clearInterval(pomTimers[id
+  ].interval);delete pomTimers[id];}updateTimerUI(id,25*60,false);}  
+  function pomoDone(id){['todo','wip','done'].forEach(col=>{const
+  card=(board[col]||[]).find(c=>c.id===id);if(card){card.pomoDone=(ca
+  rd.pomoDone||0)+1;save();showToast('🍅 Pomodoro done! +1 for 
+  "'+card.title.slice(0,20)+'"');}});resetPomo(id);}                 
+  function updateTimerUI(id,remaining,running){const
+  m=Math.floor(remaining/60);const s=remaining%60;const display=`${St
+  ring(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;const
+  timerEl=document.getElementById('timer-'+id);const                 
+  btnEl=document.getElementById('pbtn-'+id);if(timerEl){timerEl.textC
+  ontent=display;timerEl.className='pomo-timer'+(running?'
+  running':remaining===0?'
+  done':'');}if(btnEl)btnEl.textContent=running?'⏸ Pause':'▶
+  Start';}
+  function toggleSub(cardId,subIdx,checked,col){const
+  card=(board[col]||[]).find(c=>c.id===cardId);if(!card||!card.subtas
+  ks)return;card.subtasks[subIdx].done=checked;const allDone=card.sub
+  tasks.every(s=>s.done);if(allDone&&col!=='done'){const             
+  idx=board[col].findIndex(c=>c.id===cardId);board[col].splice(idx,1)
+  ;board['done'].push(card);save();showToast('🎉 All subtasks done!
+  Moved to Done.');return;}save();}
+  function moveCard(id,currentCol){const
+  order=['todo','wip','done'];const                                  
+  nextCol=order[(order.indexOf(currentCol)+1)%order.length];const idx
+  =board[currentCol].findIndex(c=>c.id===id);if(idx===-1)return;const
+   card=board[currentCol].splice(idx,1)[0];board[nextCol].push(card);
+  save();showToast(`→ Moved to "${nextCol==='wip'?'Work in
+  Progress':nextCol==='done'?'Done':'To Do'}"`);}
+  function onDragOver(e){e.preventDefault();e.currentTarget.classList
+  .add('drag-over');}                                                
+  function 
+  onDragLeave(e){e.currentTarget.classList.remove('drag-over');}     
+  function onDrop(e,targetCol){e.preventDefault();e.currentTarget.cla
+  ssList.remove('drag-over');if(!dragId)return;const[id,fromCol]=drag
+  Id.split('|');if(fromCol===targetCol)return;const
+  idx=board[fromCol].findIndex(c=>c.id===id);if(idx===-1)return;const
+   card=board[fromCol].splice(idx,1)[0];board[targetCol].push(card);s
+  ave();}
+  function openAddCard(col){document.getElementById('modal-title').te
+  xtContent='✍️  Add New                                              
+  Card';document.getElementById('edit-id').value='';document.getEleme
+  ntById('inp-title').value='';document.getElementById('inp-note').va
+  lue='';document.getElementById('inp-subtasks').value='';document.ge
+  tElementById('inp-cat').value='Accounting';document.getElementById(
+  'inp-col').value=col;document.getElementById('inp-pomo').value='1';
+  document.getElementById('card-modal').classList.add('show');setTime
+  out(()=>document.getElementById('inp-title').focus(),100);}
+  function editCard(id){let
+  card,col;['todo','wip','done'].forEach(c=>{const found=(board[c]||[
+  ]).find(x=>x.id===id);if(found){card=found;col=c;}});if(!card)retur
+  n;document.getElementById('modal-title').textContent='✏️  Edit      
+  Card';document.getElementById('edit-id').value=id;document.getEleme
+  ntById('inp-title').value=card.title;document.getElementById('inp-n
+  ote').value=card.note||'';document.getElementById('inp-cat').value=
+  card.cat||'Accounting';document.getElementById('inp-col').value=col
+  ;document.getElementById('inp-pomo').value=card.pomoPlanned||1;docu
+  ment.getElementById('inp-subtasks').value=(card.subtasks||[]).map(s
+  =>s.text).join('\n');document.getElementById('card-modal').classLis
+  t.add('show');}
+  function saveCard(){const title=document.getElementById('inp-title'
+  ).value.trim();if(!title){showToast('⚠️  Enter a                    
+  title!');return;}const
+  editId=document.getElementById('edit-id').value;const              
+  col=document.getElementById('inp-col').value;const
+  subtaskLines=document.getElementById('inp-subtasks').value.split('\
+  n').map(l=>l.trim()).filter(Boolean);const
+  data={title,note:document.getElementById('inp-note').value.trim(),c
+  at:document.getElementById('inp-cat').value,pomoPlanned:parseInt(do
+  cument.getElementById('inp-pomo').value)||1,date:new Date().toLocal
+  eDateString('vi-VN'),subtasks:subtaskLines.map(t=>({text:t,done:fal
+  se}))};if(editId){['todo','wip','done'].forEach(c=>{const
+  idx=(board[c]||[]).findIndex(x=>x.id===editId);if(idx!==-1){if(c!==
+  col){const card=board[c].splice(idx,1)[0];Object.assign(card,data);
+  board[col].push(card);}else{Object.assign(board[c][idx],data);}}});
+  showToast('✅ Card updated!');}else{const card={id:'card-'+Date.now
+  (),...data,pomoDone:0};board[col].push(card);showToast('✅ Card
+  added!');}closeModal();save();}
+  function deleteCard(id,col){if(!confirm('Delete this 
+  card?'))return;board[col]=board[col].filter(c=>c.id!==id);if(pomTim
+  ers[id]){clearInterval(pomTimers[id].interval);delete
+  pomTimers[id];}save();showToast('🗑 Deleted');}                     
+  function closeModal(){document.getElementById('card-modal').classLi
+  st.remove('show');}
+  function closeModalBg(e){if(e.target===document.getElementById('car
+  d-modal'))closeModal();}                                           
+  function updateStats(){const total=['todo','wip','done'].reduce((a,
+  c)=>a+(board[c]||[]).length,0);const                               
+  pomo=['todo','wip','done'].reduce((a,c)=>a+(board[c]||[]).reduce((s
+  ,x)=>s+(x.pomoDone||0),0),0);document.getElementById('stat-total').
+  textContent=total;document.getElementById('stat-wip').textContent=(
+  board.wip||[]).length;document.getElementById('stat-done').textCont
+  ent=(board.done||[]).length;document.getElementById('stat-pomo').in
+  nerHTML=`<span>${pomo}</span>`;}
+  function exportBoard(){let html='<!DOCTYPE 
+  html>\n'+document.documentElement.outerHTML;const blob=new         
+  Blob([html],{type:'text/html;charset=utf-8'});const
+  a=document.createElement('a');a.href=URL.createObjectURL(blob);a.do
+  wnload='kanban.html';a.click();setTimeout(()=>URL.revokeObjectURL(a
+  .href),3000);showToast('⬇️  Exported!');}
+  function showToast(msg){const
+  t=document.getElementById('toast');t.textContent=msg;t.classList.ad
+  d('show');setTimeout(()=>t.classList.remove('show'),2500);}
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMo
+  dal();if((e.metaKey||e.ctrlKey)&&e.key==='Enter')saveCard();});    
+  renderAll();
+  </script>                                                          
+  </body>         
+  </html>
